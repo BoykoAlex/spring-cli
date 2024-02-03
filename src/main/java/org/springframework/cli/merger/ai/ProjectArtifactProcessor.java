@@ -71,8 +71,8 @@ public class ProjectArtifactProcessor {
 		return processArtifacts(projectArtifacts, projectPath, terminalMessage);
 	}
 
-	private ProcessArtifactResult processArtifacts(List<ProjectArtifact> projectArtifacts, Path projectPath, TerminalMessage terminalMessage) {
-		ProcessArtifactResult processArtifactResult = new ProcessArtifactResult();
+	private ProcessArtifactResult<Void> processArtifacts(List<ProjectArtifact> projectArtifacts, Path projectPath, TerminalMessage terminalMessage) {
+		ProcessArtifactResult<Void> processArtifactResult = new ProcessArtifactResult<>();
 		for (ProjectArtifact projectArtifact : projectArtifacts) {
 			try {
 				ProjectArtifactType artifactType = projectArtifact.getArtifactType();

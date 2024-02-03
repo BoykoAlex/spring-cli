@@ -17,9 +17,12 @@
 
 package org.springframework.cli.runtime.engine.actions.handlers;
 
+import org.openrewrite.Recipe;
 import org.springframework.cli.SpringCliException;
+import org.springframework.cli.recipe.AddDependencyRecipeFactory;
 import org.springframework.cli.recipe.AddManagedDependencyRecipe;
 import org.springframework.cli.recipe.AddManagedDependencyRecipeFactory;
+import org.springframework.cli.runtime.engine.actions.InjectMavenDependency;
 import org.springframework.cli.runtime.engine.actions.InjectMavenDependencyManagement;
 import org.springframework.cli.runtime.engine.templating.TemplateEngine;
 import org.springframework.cli.util.MavenDependencyReader;
@@ -27,7 +30,10 @@ import org.springframework.cli.util.TerminalMessage;
 import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class InjectMavenDependencyManagementActionHandler extends AbstractInjectMavenActionHandler {
 
@@ -47,7 +53,15 @@ public class InjectMavenDependencyManagementActionHandler extends AbstractInject
 		for (String mavenDependency : mavenDependencies) {
 			AddManagedDependencyRecipeFactory recipeFactory = new AddManagedDependencyRecipeFactory();
 			AddManagedDependencyRecipe addManagedDependency = recipeFactory.create(mavenDependency);
-  			runRecipe(pomPath, addManagedDependency);
+  			execRecipe(pomPath, addManagedDependency);
 		}
 	}
+
+	public List<Recipe> getRecipe(InjectMavenDependencyManagement injectMavenDependencyManagement) {
+		String text = getTextToUse(injectMavenDependencyManagement.getText(), "Inject Maven Dependency Management");
+		MavenDependencyReader mavenDependencyReader = new MavenDependencyReader();
+		String[] mavenDependencies = mavenDependencyReader.parseMavenSection(text);
+		return Arrays.stream(mavenDependencies).map(mavenDependency -> new AddManagedDependencyRecipeFactory().create(mavenDependency)).collect(Collectors.toList());
+	}
+
 }

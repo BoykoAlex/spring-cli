@@ -36,6 +36,7 @@ import org.springframework.cli.SpringCliException;
 import org.springframework.cli.merger.ai.service.DescriptionRewriteAiService;
 import org.springframework.cli.merger.ai.service.GenerateCodeAiService;
 import org.springframework.cli.merger.ai.service.ProjectNameHeuristicAiService;
+import org.springframework.cli.runtime.engine.actions.handlers.json.Lsp;
 import org.springframework.cli.util.IoUtils;
 import org.springframework.cli.util.RootPackageFinder;
 import org.springframework.cli.util.TerminalMessage;
@@ -74,7 +75,7 @@ public class OpenAiHandler {
 
 		writeReadMe(projectName, readmeResponse, projectPath, terminalMessage);
 		if (!preview) {
-			List<ProjectArtifact> projectArtifacts = createProjectArtifacts(readmeResponse);
+			List<ProjectArtifact> projectArtifacts = computeProjectArtifacts(readmeResponse);
 			ProjectArtifactProcessor projectArtifactProcessor = new ProjectArtifactProcessor(projectArtifacts,  projectPath, terminalMessage);
 			ProcessArtifactResult processArtifactResult = projectArtifactProcessor.process();
 			//TODO mention artifacts not processed
@@ -84,6 +85,12 @@ public class OpenAiHandler {
 
 
 	public void apply(String file, String path, TerminalMessage terminalMessage) {
+		List<ProjectArtifact> projectArtifacts = computeProjectArtifacts(file, path, terminalMessage);
+		ProjectArtifactProcessor projectArtifactProcessor = new ProjectArtifactProcessor(projectArtifacts, getProjectPath(path), terminalMessage);
+		projectArtifactProcessor.process();
+	}
+
+	private List<ProjectArtifact> computeProjectArtifacts(String file, String path, TerminalMessage terminalMessage) {
 		Path projectPath = getProjectPath(path);
 		Path readmePath = projectPath.resolve(file);
 		if (Files.notExists(readmePath)) {
@@ -94,13 +101,16 @@ public class OpenAiHandler {
 		}
 		try (InputStream stream = Files.newInputStream(readmePath)) {
 			String response = StreamUtils.copyToString(stream, UTF_8);
-			List<ProjectArtifact> projectArtifacts = createProjectArtifacts(response);
-			ProjectArtifactProcessor projectArtifactProcessor = new ProjectArtifactProcessor(projectArtifacts, projectPath, terminalMessage);
-			projectArtifactProcessor.process();
+			return computeProjectArtifacts(response);
 		} catch (IOException ex) {
 			throw new SpringCliException("Could not read file " + readmePath.toAbsolutePath(), ex);
 		}
+	}
 
+	public Lsp.WorkspaceEdit createEdit(String file, String path, TerminalMessage terminalMessage) throws IOException {
+		List<ProjectArtifact> projectArtifacts = computeProjectArtifacts(file, path, terminalMessage);
+		ProjectArtifactEditGenerator editGenerator = new ProjectArtifactEditGenerator(projectArtifacts, getProjectPath(path), file, terminalMessage);
+		return editGenerator.process().getResult();
 	}
 
 	private void writeReadMe(ProjectName projectName, String text, Path projectPath, TerminalMessage terminalMessage) {
@@ -153,7 +163,7 @@ public class OpenAiHandler {
 	}
 
 
-	List<ProjectArtifact> createProjectArtifacts(String response) {
+	List<ProjectArtifact> computeProjectArtifacts(String response) {
 		ProjectArtifactCreator projectArtifactCreator = new ProjectArtifactCreator();
 		List<ProjectArtifact> projectArtifacts = projectArtifactCreator.create(response);
 		return projectArtifacts;

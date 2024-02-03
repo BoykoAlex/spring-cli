@@ -39,7 +39,7 @@ public class OpenAiHandlerTests {
 		String response = StreamUtils.copyToString(classPathResource.getInputStream(), UTF_8);
 		assertThat(response).isNotNull();
 
-		List<ProjectArtifact> projectArtifacts = openAiHandler.createProjectArtifacts(response);
+		List<ProjectArtifact> projectArtifacts = openAiHandler.computeProjectArtifacts(response);
 //		ResponseModifier responseModifier = new ResponseModifier();
 //		String modifiedResponse = responseModifier.modify(response, "fake");
 //		assertThat(modifiedResponse).isNotNull();

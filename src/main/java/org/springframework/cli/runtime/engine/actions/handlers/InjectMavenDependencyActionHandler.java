@@ -18,14 +18,20 @@
 package org.springframework.cli.runtime.engine.actions.handlers;
 
 import org.openrewrite.Recipe;
+import org.openrewrite.RecipeRun;
+import org.openrewrite.config.DeclarativeRecipe;
 import org.springframework.cli.recipe.AddDependencyRecipeFactory;
 import org.springframework.cli.runtime.engine.actions.InjectMavenDependency;
 import org.springframework.cli.runtime.engine.templating.TemplateEngine;
 import org.springframework.cli.util.MavenDependencyReader;
 import org.springframework.cli.util.TerminalMessage;
 
+import java.util.List;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class InjectMavenDependencyActionHandler extends AbstractInjectMavenActionHandler {
 
@@ -41,8 +47,15 @@ public class InjectMavenDependencyActionHandler extends AbstractInjectMavenActio
             AddDependencyRecipeFactory recipeFactory = new AddDependencyRecipeFactory();
             Recipe addDependency = recipeFactory.create(mavenDependency);
             Path pomPath = getPomPath();
-            runRecipe(pomPath, addDependency);
+            execRecipe(pomPath, addDependency);
         }
+    }
+
+    public List<Recipe> getRecipe(InjectMavenDependency injectMavenDependency) {
+        String text = getTextToUse(injectMavenDependency.getText(), "Inject Maven Dependency");
+        MavenDependencyReader mavenDependencyReader = new MavenDependencyReader();
+        String[] mavenDependencies = mavenDependencyReader.parseMavenSection(text);
+        return Arrays.stream(mavenDependencies).map(mavenDependency -> new AddDependencyRecipeFactory().create(mavenDependency)).collect(Collectors.toList());
     }
 
 }
