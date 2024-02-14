@@ -19,6 +19,7 @@ package org.springframework.cli.command;
 
 import java.nio.file.Path;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -43,7 +44,7 @@ public class AiCommandsTests {
 		this.contextRunner.withUserConfiguration(MockUserConfig.class).run((context) -> {
 
 			StubGenerateCodeAiService stubGenerateCodeAiService = new StubGenerateCodeAiService(TerminalMessage.noop());
-			AiCommands aiCommands = new AiCommands(new OpenAiHandler(stubGenerateCodeAiService), TerminalMessage.noop());
+			AiCommands aiCommands = new AiCommands(new OpenAiHandler(stubGenerateCodeAiService), TerminalMessage.noop(), new ObjectMapper());
 
 			CommandRunner commandRunner = new CommandRunner.Builder(context)
 					.prepareProject("rest-service", workingDir)

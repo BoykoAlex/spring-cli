@@ -169,4 +169,40 @@ public class OpenAiHandler {
 		return projectArtifacts;
 	}
 
+	public PromptRequest prompt(String description, String path, boolean rewrite, TerminalMessage terminalMessage) {
+		Path projectPath = getProjectPath(path);
+
+		ProjectNameHeuristicAiService projectNameHeuristic = new ProjectNameHeuristicAiService(terminalMessage);
+		logger.debug("Deriving main Spring project required...");
+		ProjectName projectName = projectNameHeuristic.deriveProjectName(description);
+		logger.debug("Done.  The code will primarily use " + projectName.getSpringProjectName());
+
+		if (rewrite) {
+			DescriptionRewriteAiService descriptionRewriteAiService = new DescriptionRewriteAiService(terminalMessage);
+			description = descriptionRewriteAiService.rewrite(description);
+		}
+		terminalMessage.print("");
+		terminalMessage.print("The description has been rewritten to be: " + description);
+		terminalMessage.print("");
+		Map<String, String> context = createContext(description, projectName, projectPath);
+
+		return this.generateCodeAiService.prompt(context);
+	}
+
+	public String modifyAiResponse(String file, String path) {
+		Path projectPath = getProjectPath(path);
+		Path readmePath = projectPath.resolve(file);
+		if (Files.notExists(readmePath)) {
+			throw new SpringCliException("Could not find file " + file);
+		}
+		if (!Files.isRegularFile(readmePath)) {
+			throw new SpringCliException("The Path " + readmePath + " is not a regular file, can't read");
+		}
+		try (InputStream stream = Files.newInputStream(readmePath)) {
+			String response = StreamUtils.copyToString(stream, UTF_8);
+			return new ResponseModifier().modify(response, "");
+		} catch (IOException ex) {
+			throw new SpringCliException("Could not read file " + readmePath.toAbsolutePath(), ex);
+		}
+	}
 }

@@ -59,4 +59,8 @@ public class GenerateCodeAiService extends AbstractOpenAiService {
 		}
 		return estimatedTime.format(formatter);
 	}
+
+	public PromptRequest prompt(Map<String, String> context) {
+		return createPromptRequest(context, "ai-add");
+	}
 }
